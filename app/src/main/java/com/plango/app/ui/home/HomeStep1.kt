@@ -14,6 +14,11 @@ import com.plango.app.ui.home.MyPageViewPagerAdapter
 import com.plango.app.databinding.FragmentHomeStep1Binding
 import com.google.android.material.tabs.TabLayoutMediator
 import com.plango.app.ui.generate.GenerateActivity
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import com.plango.app.data.user.UserPrefs
+import com.plango.app.viewmodel.TravelViewModel
+import kotlinx.coroutines.launch
 
 
 
@@ -23,6 +28,7 @@ class HomeStep1 : Fragment() {
     private val binding get() = _binding!!
     private var userName: String? = null
     private var selectedImageUri: Uri? =null
+    private val travelViewModel: TravelViewModel by activityViewModels()
 
     private val pickImageLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -66,6 +72,15 @@ class HomeStep1 : Fragment() {
             tab.text = titles[pos]
         }.attach()
         
+        // 처음에 모든 여행 목록을 미리 로드
+        lifecycleScope.launch {
+            val userId = UserPrefs.getUserIdOnce(requireContext())
+            if (!userId.isNullOrEmpty()) {
+                android.util.Log.d("HomeStep1", "모든 여행 목록 미리 로드 시작")
+                travelViewModel.loadAllTravels(userId)
+            }
+        }
+        
         binding.btnCreateTrip.setOnClickListener {
             val intent = Intent(requireContext(), GenerateActivity::class.java)
             startActivity(intent)
@@ -97,6 +112,7 @@ class HomeStep1 : Fragment() {
                 .into(binding.profileImage)
         }
     }
+    
 
 
     override fun onDestroyView() {

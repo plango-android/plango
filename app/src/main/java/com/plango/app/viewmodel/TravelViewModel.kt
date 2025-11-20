@@ -11,6 +11,14 @@ class TravelViewModel : ViewModel() {
     private val repository = TravelRepository
 
     val travelDetailFlow: StateFlow<TravelDetailResponse?> = repository.travelDetailFlow
+    
+    // 각각의 여행 목록 Flow
+    val upcomingTravelsFlow: StateFlow<List<TravelSummaryResponse>> = repository.upcomingTravelsFlow
+    val ongoingTravelsFlow: StateFlow<List<TravelSummaryResponse>> = repository.ongoingTravelsFlow
+    val finishedTravelsFlow: StateFlow<List<TravelSummaryResponse>> = repository.finishedTravelsFlow
+    
+    // 하위 호환성을 위한 기존 flow
+    @Deprecated("각각의 flow를 사용하세요")
     val travelListFlow: StateFlow<List<TravelSummaryResponse>> = repository.travelListFlow
 
 
@@ -54,5 +62,10 @@ class TravelViewModel : ViewModel() {
     /**  상세조회 */
     fun getTravelDetail(travelId: Long) = viewModelScope.launch {
         repository.getTravelDetail(travelId)
+    }
+    
+    /** 모든 여행 목록을 한 번에 로드 */
+    fun loadAllTravels(publicId: String) = viewModelScope.launch {
+        repository.loadAllTravels(publicId)
     }
 }

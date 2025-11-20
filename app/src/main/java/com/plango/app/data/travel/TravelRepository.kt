@@ -5,6 +5,8 @@ import com.plango.app.api.ApiProvider
 import com.plango.app.api.ApiService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 object TravelRepository {
     private val api: ApiService = ApiProvider.api
@@ -18,7 +20,18 @@ object TravelRepository {
         _travelDetailFlow.value = detail
     }
 
-    // 목록 캐시
+    // 목록 캐시 (각각 별도로 관리)
+    private val _upcomingTravelsFlow = MutableStateFlow<List<TravelSummaryResponse>>(emptyList())
+    val upcomingTravelsFlow: StateFlow<List<TravelSummaryResponse>> = _upcomingTravelsFlow
+    
+    private val _ongoingTravelsFlow = MutableStateFlow<List<TravelSummaryResponse>>(emptyList())
+    val ongoingTravelsFlow: StateFlow<List<TravelSummaryResponse>> = _ongoingTravelsFlow
+    
+    private val _finishedTravelsFlow = MutableStateFlow<List<TravelSummaryResponse>>(emptyList())
+    val finishedTravelsFlow: StateFlow<List<TravelSummaryResponse>> = _finishedTravelsFlow
+    
+    // 하위 호환성을 위한 기존 flow (deprecated)
+    @Deprecated("각각의 flow를 사용하세요")
     private val _travelListFlow = MutableStateFlow<List<TravelSummaryResponse>>(emptyList())
     val travelListFlow: StateFlow<List<TravelSummaryResponse>> = _travelListFlow
 
@@ -40,7 +53,8 @@ object TravelRepository {
         try {
             val response = api.getUpcomingTravels(userPublicId)
             Log.d("TravelRepository", "다가올 여행 ${response.size}건 수신")
-            _travelListFlow.value = response
+            _upcomingTravelsFlow.value = response
+            _travelListFlow.value = response // 하위 호환성
         } catch (e: Exception) {
             Log.e("TravelRepository", "다가올 여행 불러오기 실패: ${e.message}", e)
         }
@@ -51,7 +65,8 @@ object TravelRepository {
         try {
             val response = api.getFinishedTravels(userPublicId)
             Log.d("TravelRepository", "지난 여행 ${response.size}건 수신")
-            _travelListFlow.value = response
+            _finishedTravelsFlow.value = response
+            _travelListFlow.value = response // 하위 호환성
         } catch (e: Exception) {
             Log.e("TravelRepository", "지난 여행 불러오기 실패: ${e.message}", e)
         }
@@ -62,9 +77,24 @@ object TravelRepository {
         try {
             val response = api.getOngoingTravels(userPublicId)
             Log.d("TravelRepository", "진행 중 여행 ${response.size}건 수신")
-            _travelListFlow.value = response
+            _ongoingTravelsFlow.value = response
+            _travelListFlow.value = response // 하위 호환성
         } catch (e: Exception) {
             Log.e("TravelRepository", "진행 중 여행 불러오기 실패: ${e.message}", e)
+        }
+    }
+    
+    // 모든 여행 목록을 한 번에 로드
+    suspend fun loadAllTravels(userPublicId: String) {
+        try {
+            coroutineScope {
+                launch { getUpcomingTravels(userPublicId) }
+                launch { getOngoingTravels(userPublicId) }
+                launch { getFinishedTravels(userPublicId) }
+            }
+            Log.d("TravelRepository", "모든 여행 목록 로드 완료")
+        } catch (e: Exception) {
+            Log.e("TravelRepository", "모든 여행 목록 로드 실패: ${e.message}", e)
         }
     }
 

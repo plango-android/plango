@@ -64,32 +64,11 @@ class HomeStep3 : Fragment() {
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
-        // 데이터 관찰
+        // 데이터 관찰 (이미 로드된 데이터를 즉시 표시)
         lifecycleScope.launch {
-            travelViewModel.travelListFlow.collectLatest { travels ->
+            travelViewModel.finishedTravelsFlow.collectLatest { travels ->
                 adapter.submitList(travels)
                 Log.d("HomeStep3", "지난 여행 ${travels.size}건 표시")
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Fragment가 실제로 보일 때만 데이터 로드
-        if (isVisible && isResumed) {
-            loadData()
-        }
-    }
-    
-    fun loadData() {
-        if (!isAdded) return
-        lifecycleScope.launch {
-            val userId = UserPrefs.getUserIdOnce(requireContext())
-            if (!userId.isNullOrEmpty()) {
-                Log.d("HomeStep3", "데이터 로드 시작: userId=$userId")
-                travelViewModel.getFinishedTravels(userId)
-            } else {
-                Log.w("HomeStep3", "userId가 null이거나 비어있음")
             }
         }
     }
